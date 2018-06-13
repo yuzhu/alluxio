@@ -973,7 +973,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
       throws FileDoesNotExistException, UnavailableException,
       AccessControlException, InvalidPathException {
     Inode<?> inode = currInodePath.getInode();
-    if (inode.isDirectory()) {
+    if (inode.isDirectory() && descendantType != DescendantType.NONE) {
       try {
         // TODO(david): Return the error message when we do not have permission
         mPermissionChecker.checkPermission(Mode.Bits.EXECUTE, currInodePath);
@@ -985,25 +985,23 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
           throw e;
         }
       }
-      if (descendantType != DescendantType.NONE) {
-        DescendantType nextDescendantType = (descendantType == DescendantType.ALL)
-            ? DescendantType.ALL : DescendantType.NONE;
+      DescendantType nextDescendantType = (descendantType == DescendantType.ALL)
+          ? DescendantType.ALL : DescendantType.NONE;
 
-        String [] parentChildPathComp = null;
-        if (!((InodeDirectory) inode).getChildren().isEmpty()) {
-          String [] parentPathComp = PathUtils.getPathComponents(currInodePath.getUri().getPath());
-          parentChildPathComp = new String[parentPathComp.length + 1];
-          System.arraycopy(parentPathComp, 0, parentChildPathComp, 0,  parentPathComp.length);
-        }
+      String [] parentChildPathComp = null;
+      if (!((InodeDirectory) inode).getChildren().isEmpty()) {
+        String [] parentPathComp = PathUtils.getPathComponents(currInodePath.getUri().getPath());
+        parentChildPathComp = new String[parentPathComp.length + 1];
+        System.arraycopy(parentPathComp, 0, parentChildPathComp, 0,  parentPathComp.length);
+      }
 
-        for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
-          // TODO(david): Make extending InodePath more efficient
-          parentChildPathComp[parentChildPathComp.length - 1] = child.getName();
-          try (LockedInodePath childInodePath = mInodeTree.lockChildPath(currInodePath,
-              InodeTree.LockMode.READ, child, parentChildPathComp)) {
-            listStatusInternal(childInodePath, auditContext,
-                nextDescendantType, statusList);
-          }
+      for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
+        // TODO(david): Make extending InodePath more efficient
+        parentChildPathComp[parentChildPathComp.length - 1] = child.getName();
+        try (LockedInodePath childInodePath = mInodeTree.lockChildPath(currInodePath,
+            InodeTree.LockMode.READ, child, parentChildPathComp)) {
+          listStatusInternal(childInodePath, auditContext,
+              nextDescendantType, statusList);
         }
       }
     }
