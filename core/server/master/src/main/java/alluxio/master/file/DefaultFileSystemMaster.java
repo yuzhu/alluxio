@@ -939,12 +939,32 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
       List<FileInfo> ret = new ArrayList<>();
       DescendantType descendantTypeForListStatus = (listStatusOptions.isRecursive())
           ? DescendantType.ALL : DescendantType.ONE;
-      listStatusInternal(inodePath, auditContext, descendantTypeForListStatus, ret);
+      if (inode.isDirectory()) {
+        try (TempInodePathForDescendant tempInodePath = new TempInodePathForDescendant(inodePath)) {
+          try {
+            mPermissionChecker.checkPermission(Mode.Bits.EXECUTE, inodePath);
+          } catch (AccessControlException e) {
+            auditContext.setAllowed(false);
+            throw e;
+          }
+          for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
+            child.lockReadAndCheckParent(inode);
+            try {
+              // the path to child for getPath should already be locked.
+              tempInodePath.setDescendant(child, mInodeTree.getPath(child));
+              ret.add(getFileInfoInternal(tempInodePath));
+            } finally {
+              child.unlockRead();
+            }
+          }
+        }
+      } else {
+        ret.add(getFileInfoInternal(inodePath));
+
+      }
+        // listStatusInternal(inodePath, auditContext, descendantTypeForListStatus, ret);
 
       // If we are listing the status of a directory, we remove the directory info that we inserted
-      if (inode.isDirectory() && ret.size() >= 1) {
-        ret.remove(ret.size() - 1);
-      }
 
       auditContext.setSucceeded(true);
       Metrics.FILE_INFOS_GOT.inc();
