@@ -766,6 +766,29 @@ public class InodeTree implements JournalEntryIterable {
   }
 
   /**
+   * Lock from a specific poiint in the tree to the immediate child, and return a lockedInodePath.
+   *
+   * @param inodePath the root to start locking
+   * @param lockMode the lock type to use
+   * @param childInode the inode of the child that we are locking
+   * @return an {@link InodeLockList} representing the list of descendants that got locked as
+   * a result of this call.
+   * @throws FileDoesNotExistException if the inode does not exist
+   * @throws InvalidPathException if the path is invalid
+   */
+  public LockedInodePath lockChildPath(LockedInodePath inodePath, LockMode lockMode,
+      Inode<?> childInode) throws FileDoesNotExistException, InvalidPathException {
+    InodeLockList inodeLockList = new InodeLockList();
+    if (lockMode == LockMode.READ) {
+      inodeLockList.lockReadAndCheckParent(childInode, inodePath.getInode());
+    } else {
+      inodeLockList.lockWriteAndCheckParent(childInode, inodePath.getInode());
+    }
+    return new MutableLockedInodePath(inodePath.getUri().join(childInode.getName()),
+        new CompositeInodeLockList(inodePath.mLockList, inodeLockList), lockMode);
+  }
+
+  /**
    * Locks a specific descendant of a particular {@link LockedInodePath}. It does not extend the
    * {@link LockedInodePath}, it only locks the descendant.
    *
