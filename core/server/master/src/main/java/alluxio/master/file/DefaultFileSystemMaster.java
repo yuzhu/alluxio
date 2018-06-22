@@ -991,8 +991,12 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
           // TODO(david): Make extending InodePath more efficient
           try (LockedInodePath childInodePath = mInodeTree.lockFullInodePath(child.getId(),
               InodeTree.LockMode.READ)) {
-            listStatusInternal(childInodePath, auditContext,
-                nextDescendantType, statusList);
+            if (nextDescendantType == DescendantType.NONE && childInodePath.getInode().isFile()) {
+              statusList.add(getFileInfoInternal(childInodePath));
+            } else {
+              listStatusInternal(childInodePath, auditContext,
+                  nextDescendantType, statusList);
+            }
           } catch (FileDoesNotExistException e) {
             LOG.debug("ListStatus failed for path {} because file does not exist",
                 mInodeTree.getPath(child).getPath(), e);
