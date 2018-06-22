@@ -992,8 +992,12 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
           try (TempInodePathForDescendant tempInodePath = new TempInodePathForDescendant(currInodePath)){
             child.lockReadAndCheckParent(inode);
             tempInodePath.setDescendant(child, mInodeTree.getPath(child));
-            listStatusInternal(tempInodePath, auditContext,
-                nextDescendantType, statusList);
+            if (nextDescendantType == DescendantType.NONE) {
+              statusList.add(getFileInfoInternal(tempInodePath));
+            } else {
+              listStatusInternal(tempInodePath, auditContext,
+                  nextDescendantType, statusList);
+            }
           } finally {
             child.unlockRead();
           }
