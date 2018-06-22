@@ -970,7 +970,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
                                   AuditContext auditContext,
                                   DescendantType descendantType,
                                   List<FileInfo> statusList)
-      throws FileDoesNotExistException, UnavailableException, AccessControlException {
+      throws FileDoesNotExistException, UnavailableException, AccessControlException, InvalidPathException {
     Inode<?> inode = currInodePath.getInode();
     if (inode.isDirectory()) {
       try {
@@ -989,19 +989,13 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
             ? DescendantType.ALL : DescendantType.NONE;
         for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
           // TODO(david): Make extending InodePath more efficient
-          try (LockedInodePath childInodePath = mInodeTree.lockFullInodePath(child.getId(),
-              InodeTree.LockMode.READ)) {
-            listStatusInternal(childInodePath, auditContext,
+          try (TempInodePathForDescendant tempInodePath = new TempInodePathForDescendant(currInodePath)){
+            child.lockReadAndCheckParent(inode);
+            tempInodePath.setDescendant(child, mInodeTree.getPath(child));
+            listStatusInternal(tempInodePath, auditContext,
                 nextDescendantType, statusList);
-          } catch (FileDoesNotExistException e) {
-            LOG.debug("ListStatus failed for path {} because file does not exist",
-                mInodeTree.getPath(child).getPath(), e);
-          } catch (UnavailableException e) {
-            LOG.debug("ListStatus failed for path {} because service is not available",
-                mInodeTree.getPath(child).getPath(), e);
-          } catch (AccessControlException e) {
-            LOG.debug("ListStatus failed for path {} because user does not have access",
-                mInodeTree.getPath(child).getPath(), e);
+          } finally {
+            child.unlockRead();
           }
         }
       }
