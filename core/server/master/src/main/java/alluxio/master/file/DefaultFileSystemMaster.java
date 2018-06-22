@@ -941,13 +941,13 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
           ? DescendantType.ALL : DescendantType.ONE;
       listStatusInternal(inodePath, auditContext, descendantTypeForListStatus, ret);
 
-      /*
+
       // If we are listing the status of a directory, we remove the directory info that we inserted
 
       if (inode.isDirectory() && ret.size() >= 1) {
         ret.remove(ret.size() - 1);
       }
-       */
+
       auditContext.setSucceeded(true);
       Metrics.FILE_INFOS_GOT.inc();
       return ret;
@@ -959,7 +959,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
    * the descendantType. The result is returned via a list specified by statusList, in postorder
    * traversal order.
    *
-   * @param inodePath the inode path to find the status
+   * @param currInodePath the inode path to find the status
    * @param auditContext the audit context to return any access exceptions
    * @param descendantType if the currInodePath is a directory, how many levels of its descendant
    *                       should be returned
@@ -968,13 +968,15 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
    * @throws FileDoesNotExistException if the path does not exist
    * @throws UnavailableException if the service is temporarily unavailable
    */
-  private void listStatusInternal(LockedInodePath inodePath,
+  private void listStatusInternal(LockedInodePath currInodePath,
                                   AuditContext auditContext,
                                   DescendantType descendantType,
                                   List<FileInfo> statusList)
       throws FileDoesNotExistException, UnavailableException, AccessControlException, InvalidPathException {
-    Inode<?> inode = inodePath.getInode();
-    if (inode.isDirectory()) { 
+
+    Inode<?> inode = currInodePath.getInode();
+
+    /*if (inode.isDirectory()) {
       try (TempInodePathForDescendant tempInodePath = new TempInodePathForDescendant(inodePath)) { 
         try { 
           mPermissionChecker.checkPermission(Mode.Bits.EXECUTE, inodePath); 
@@ -997,10 +999,10 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
     } else {
       statusList.add(getFileInfoInternal(inodePath));
     }
+    */
     
     
-    
-    /*
+
     if (inode.isDirectory()) {
       try {
         // TODO(david): Return the error message when we do not have permission
@@ -1016,26 +1018,28 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
       if (descendantType != DescendantType.NONE) {
         DescendantType nextDescendantType = (descendantType == DescendantType.ALL)
             ? DescendantType.ALL : DescendantType.NONE;
-        for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
-          // TODO(david): Make extending InodePath more efficient
-          try (TempInodePathForDescendant tempInodePath = new TempInodePathForDescendant(currInodePath)){
-            child.lockReadAndCheckParent(inode);
-            tempInodePath.setDescendant(child, mInodeTree.getPath(child));
-            if (nextDescendantType == DescendantType.NONE) {
-              statusList.add(getFileInfoInternal(tempInodePath));
-            } else {
-              listStatusInternal(tempInodePath, auditContext,
-                  nextDescendantType, statusList);
+        try (TempInodePathForDescendant tempInodePath = new TempInodePathForDescendant(currInodePath)){
+          for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
+            // TODO(david): Make extending InodePath more efficient
+            try {
+              child.lockReadAndCheckParent(inode);
+              tempInodePath.setDescendant(child, mInodeTree.getPath(child));
+              if (nextDescendantType == DescendantType.NONE) {
+                statusList.add(getFileInfoInternal(tempInodePath));
+              } else {
+                listStatusInternal(tempInodePath, auditContext,
+                    nextDescendantType, statusList);
+              }
+
+            } finally {
+              child.unlockRead();
             }
-            
-          } finally {
-            child.unlockRead();
           }
         }
       }
     }
     statusList.add(getFileInfoInternal(currInodePath));
-    */
+
   }
 
   /**
