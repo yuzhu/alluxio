@@ -759,10 +759,16 @@ public class InodeTree implements JournalEntryIterable {
    * @throws FileDoesNotExistException if inode does not exist
    */
   public LockedInodePath lockDescendantPath(LockedInodePath inodePath, LockMode lockMode,
-                                            AlluxioURI descendantUri) throws InvalidPathException {
+      AlluxioURI descendantUri, String[] pathComponents) throws InvalidPathException {
     InodeLockList descendantLockList = lockDescendant(inodePath, lockMode, descendantUri);
-    return new MutableLockedInodePath(descendantUri,
-        new CompositeInodeLockList(inodePath.mLockList, descendantLockList), lockMode);
+    if (pathComponents == null) {
+      return new MutableLockedInodePath(descendantUri,
+          new CompositeInodeLockList(inodePath.mLockList, descendantLockList), lockMode);
+    } else {
+      return new MutableLockedInodePath(descendantUri,
+          new CompositeInodeLockList(inodePath.mLockList, descendantLockList),
+          pathComponents, lockMode);
+    }
   }
 
   /**
@@ -910,7 +916,7 @@ public class InodeTree implements JournalEntryIterable {
       try {
         for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
           try (LockedInodePath childPath = lockDescendantPath(inodePath, LockMode.WRITE,
-              inodePath.getUri().join(child.getName()))) {
+              inodePath.getUri().join(child.getName()), null)) {
             setPinned(childPath, pinned, opTimeMs);
           }
         }
