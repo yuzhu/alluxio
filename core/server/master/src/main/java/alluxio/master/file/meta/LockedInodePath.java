@@ -31,7 +31,7 @@ import javax.annotation.concurrent.ThreadSafe;
 @ThreadSafe
 public abstract class LockedInodePath implements Closeable {
   protected final AlluxioURI mUri;
-  protected final String[] mPathComponents;
+  protected String[] mPathComponents;
   protected final InodeLockList mLockList;
   protected InodeTree.LockMode mLockMode;
 
@@ -40,7 +40,18 @@ public abstract class LockedInodePath implements Closeable {
       throws InvalidPathException {
     Preconditions.checkArgument(!lockList.isEmpty());
     mUri = uri;
-    mPathComponents = PathUtils.getPathComponents(mUri.getPath());
+    for (int i=0;i<10;i++) {
+      mPathComponents = PathUtils.getPathComponents(mUri.getPath());
+    }
+    mLockList = lockList;
+    mLockMode = lockMode;
+  }
+
+  LockedInodePath(AlluxioURI uri, InodeLockList lockList, String[] pathComponents,
+      InodeTree.LockMode lockMode) {
+    Preconditions.checkArgument(!lockList.isEmpty());
+    mUri = uri;
+    mPathComponents = pathComponents;
     mLockList = lockList;
     mLockMode = lockMode;
   }

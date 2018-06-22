@@ -759,7 +759,7 @@ public class InodeTree implements JournalEntryIterable {
    * @throws FileDoesNotExistException if inode does not exist
    */
   public LockedInodePath lockDescendantPath(LockedInodePath inodePath, LockMode lockMode,
-                                            AlluxioURI descendantUri) throws InvalidPathException {
+      AlluxioURI descendantUri) throws InvalidPathException {
     InodeLockList descendantLockList = lockDescendant(inodePath, lockMode, descendantUri);
     return new MutableLockedInodePath(descendantUri,
         new CompositeInodeLockList(inodePath.mLockList, descendantLockList), lockMode);
