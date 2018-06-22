@@ -969,7 +969,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
                                   AuditContext auditContext,
                                   DescendantType descendantType,
                                   List<FileInfo> statusList)
-      throws FileDoesNotExistException, UnavailableException, AccessControlException {
+      throws FileDoesNotExistException, UnavailableException, AccessControlException, InvalidPathException {
     Inode<?> inode = currInodePath.getInode();
     if (inode.isDirectory()) {
       try {
@@ -986,15 +986,22 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
       if (descendantType != DescendantType.NONE) {
         DescendantType nextDescendantType = (descendantType == DescendantType.ALL)
             ? DescendantType.ALL : DescendantType.NONE;
+        /*
+        String [] parentChildPathComp = null;
+        if (!((InodeDirectory) inode).getChildren().isEmpty()) {
+          String [] parentPathComp = PathUtils.getPathComponents(currInodePath.getUri().getPath());
+          parentChildPathComp = new String[parentPathComp.length + 1];
+          System.arraycopy(parentPathComp, 0, parentChildPathComp, 0,  parentPathComp.length);
+        }
+        */
         for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
           // TODO(david): Make extending InodePath more efficient
-          try (LockedInodePath childInodePath = mInodeTree.lockDescendantPath(currInodePath,
-              InodeTree.LockMode.READ, currInodePath.getUri().join(child.getName())))  {
+          // parentChildPathComp[parentChildPathComp.length - 1] = child.getName();
+
+          try (LockedInodePath childInodePath = mInodeTree.lockChildPath(currInodePath, InodeTree.LockMode.READ,
+              child, null)) {
             listStatusInternal(childInodePath, auditContext,
                 nextDescendantType, statusList);
-          } catch (InvalidPathException e) {
-            LOG.warn("ListStatus encountered an invalid path {}",
-                currInodePath.getUri().join(child.getName()), e);
           }
         }
       }
@@ -3287,7 +3294,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
         } else {
           try (LockedInodePath descendantPath =
                    mInodeTree.lockDescendantPath(inodePath, lockingScheme.getMode(),
-                       mountPointUri)) {
+                       mountPointUri, null)) {
             try {
               loadMetadataAndJournal(rpcContext, descendantPath, LoadMetadataOptions.defaults()
                   .setCreateAncestors(true).setLoadDescendantType(syncDescendantType));
@@ -3438,7 +3445,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
             continue;
           }
           try (LockedInodePath tempInodePath = mInodeTree.lockDescendantPath(inodePath,
-              InodeTree.LockMode.READ, inodePath.getUri().join(inodeEntry.getKey()))) {
+              InodeTree.LockMode.READ, inodePath.getUri().join(inodeEntry.getKey()), null)) {
             // Recursively sync children
             if (syncDescendantType != DescendantType.ALL) {
               syncDescendantType = DescendantType.NONE;
