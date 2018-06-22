@@ -941,11 +941,13 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
           ? DescendantType.ALL : DescendantType.ONE;
       listStatusInternal(inodePath, auditContext, descendantTypeForListStatus, ret);
 
+      /*
       // If we are listing the status of a directory, we remove the directory info that we inserted
+
       if (inode.isDirectory() && ret.size() >= 1) {
         ret.remove(ret.size() - 1);
       }
-
+       */
       auditContext.setSucceeded(true);
       Metrics.FILE_INFOS_GOT.inc();
       return ret;
@@ -957,7 +959,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
    * the descendantType. The result is returned via a list specified by statusList, in postorder
    * traversal order.
    *
-   * @param currInodePath the inode path to find the status
+   * @param inodePath the inode path to find the status
    * @param auditContext the audit context to return any access exceptions
    * @param descendantType if the currInodePath is a directory, how many levels of its descendant
    *                       should be returned
@@ -966,12 +968,39 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
    * @throws FileDoesNotExistException if the path does not exist
    * @throws UnavailableException if the service is temporarily unavailable
    */
-  private void listStatusInternal(LockedInodePath currInodePath,
+  private void listStatusInternal(LockedInodePath inodePath,
                                   AuditContext auditContext,
                                   DescendantType descendantType,
                                   List<FileInfo> statusList)
       throws FileDoesNotExistException, UnavailableException, AccessControlException, InvalidPathException {
-    Inode<?> inode = currInodePath.getInode();
+    Inode<?> inode = inodePath.getInode();
+    if (inode.isDirectory()) { 
+      try (TempInodePathForDescendant tempInodePath = new TempInodePathForDescendant(inodePath)) { 
+        try { 
+          mPermissionChecker.checkPermission(Mode.Bits.EXECUTE, inodePath); 
+        } catch (AccessControlException e) { 
+          auditContext.setAllowed(false);
+          throw e; 
+        }
+        for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
+          child.lockReadAndCheckParent(inode);
+          try {
+            // the path to child for getPath should already be locked.
+
+            tempInodePath.setDescendant(child, mInodeTree.getPath(child));
+            statusList.add(getFileInfoInternal(tempInodePath));
+          } finally {
+            child.unlockRead();
+          }
+        }
+      }
+    } else {
+      statusList.add(getFileInfoInternal(inodePath));
+    }
+    
+    
+    
+    /*
     if (inode.isDirectory()) {
       try {
         // TODO(david): Return the error message when we do not have permission
@@ -998,6 +1027,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
               listStatusInternal(tempInodePath, auditContext,
                   nextDescendantType, statusList);
             }
+            
           } finally {
             child.unlockRead();
           }
@@ -1005,6 +1035,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
       }
     }
     statusList.add(getFileInfoInternal(currInodePath));
+    */
   }
 
   /**
