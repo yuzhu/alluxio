@@ -992,15 +992,22 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
       }
       DescendantType nextDescendantType = (descendantType == DescendantType.ALL)
           ? DescendantType.ALL : DescendantType.NONE;
+
       for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
         // TODO(david): Make extending InodePath more efficient
-        try (LockedInodePath childInodePath = mInodeTree.lockChildPath(currInodePath,
-            InodeTree.LockMode.READ, child)) {
+        LockedInodePath childInodePath = null;
+        try {
+          childInodePath = mInodeTree.lockChildPath(currInodePath,
+              InodeTree.LockMode.READ, child);
           listStatusInternal(childInodePath, auditContext,
               nextDescendantType, statusList);
         } catch (InvalidPathException e) {
           LOG.warn("ListStatus encountered an invalid path {}",
               currInodePath.getUri().join(child.getName()), e);
+        } finally {
+          if (childInodePath != null) {
+            childInodePath.close();
+          }
         }
       }
     }
