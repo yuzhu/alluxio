@@ -786,11 +786,13 @@ public class InodeTree implements JournalEntryIterable {
       Inode<?> childInode, String[] pathComponents) throws FileDoesNotExistException, InvalidPathException {
     InodeLockList inodeLockList = new InodeLockList();
 
+    /*
     if (lockMode == LockMode.READ) {
       inodeLockList.lockReadAndCheckParent(childInode, inodePath.getInode());
     } else {
       inodeLockList.lockWriteAndCheckParent(childInode, inodePath.getInode());
-    }
+    } */
+
     if (pathComponents == null) {
       return new MutableLockedInodePath(inodePath.getUri().join(childInode.getName()),
           new CompositeInodeLockList(inodePath.mLockList, inodeLockList), lockMode);
