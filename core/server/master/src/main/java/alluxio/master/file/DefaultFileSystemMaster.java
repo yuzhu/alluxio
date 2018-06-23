@@ -1001,8 +1001,9 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
       for (Inode<?> child : ((InodeDirectory) inode).getChildren()) {
         // TODO(david): Make extending InodePath more efficient
         parentChildPathComp[parentChildPathComp.length - 1] = child.getName();
-        try (LockedInodePath childInodePath = mInodeTree.lockChildPath(currInodePath, InodeTree.LockMode.READ,
-            child, parentChildPathComp)) {
+        try {
+          LockedInodePath childInodePath = mInodeTree.lockChildPath(currInodePath, InodeTree.LockMode.READ,
+              child, parentChildPathComp);
           listStatusInternal(childInodePath, auditContext,
               nextDescendantType, statusList);
         } catch (InvalidPathException e) {
