@@ -1008,6 +1008,8 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
         } catch (InvalidPathException e) {
           LOG.warn("ListStatus encountered an invalid path {}",
               currInodePath.getUri().join(child.getName()), e);
+        } finally {
+          child.unlockRead();
         }
       }
     }
