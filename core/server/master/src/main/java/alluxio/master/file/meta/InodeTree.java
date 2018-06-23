@@ -786,6 +786,7 @@ public class InodeTree implements JournalEntryIterable {
       Inode<?> childInode, String[] pathComponents) throws FileDoesNotExistException, InvalidPathException {
     InodeLockList inodeLockList = new InodeLockList();
     childInode.lockReadAndCheckParent(inodePath.getInode());
+    childInode.unlockRead();
 /*
     if (lockMode == LockMode.READ) {
       inodeLockList.lockReadAndCheckParent(childInode, inodePath.getInode());
