@@ -976,7 +976,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
                                   AuditContext auditContext,
                                   DescendantType descendantType,
                                   List<FileInfo> statusList)
-      throws FileDoesNotExistException, UnavailableException, AccessControlException {
+      throws FileDoesNotExistException, UnavailableException, AccessControlException, InvalidPathException {
     Inode<?> inode = currInodePath.getInode();
     if (inode.isDirectory() && descendantType != DescendantType.NONE) {
       try {
@@ -998,9 +998,6 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
             InodeTree.LockMode.READ, currInodePath.getUri().join(child.getName())))  {
           listStatusInternal(childInodePath, auditContext,
               nextDescendantType, statusList);
-        } catch (InvalidPathException e) {
-          LOG.warn("ListStatus encountered an invalid path {}",
-              currInodePath.getUri().join(child.getName()), e);
         }
       }
     }
