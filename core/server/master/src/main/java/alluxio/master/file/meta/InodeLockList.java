@@ -171,7 +171,22 @@ public class InodeLockList implements AutoCloseable {
    */
   // TODO(david): change this API to not return a copy
   public synchronized List<Inode<?>> getInodes() {
-    return Lists.newArrayList(mInodes);
+    return mInodes;
+  }
+
+  /**
+   * @param index the index of the list
+   * @return the inode at the specified index
+   */
+  public synchronized Inode<?> get(int index) {
+    return mInodes.get(index);
+  }
+
+  /**
+   * @return the size of the list
+   */
+  public synchronized int size() {
+    return mInodes.size();
   }
 
   /**

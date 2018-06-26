@@ -523,7 +523,7 @@ public class InodeTree implements JournalEntryIterable {
     String name = path.getName();
 
     // pathIndex is the index into pathComponents where we start filling in the path from the inode.
-    int pathIndex = extensibleInodePath.getInodeList().size();
+    int pathIndex = extensibleInodePath.size();
     if (pathIndex < pathComponents.length - 1) {
       // The immediate parent was not found. If it's not recursive, we throw an exception here.
       // Otherwise we add the remaining path components to the list of components to create.
@@ -813,7 +813,7 @@ public class InodeTree implements JournalEntryIterable {
     }
 
     List<Inode<?>> nonPersistedInodes = new ArrayList<>();
-    List<Inode<?>> inodeList = new ArrayList<>(inodePath.getInodeList());
+    List<Inode<?>> inodeList = inodePath.getInodeList();
     for (Inode<?> inode : inodeList) {
       if (!inode.isPersisted()) {
         nonPersistedInodes.add(inode);
@@ -1205,7 +1205,7 @@ public class InodeTree implements JournalEntryIterable {
           }
           inodes.add(mRoot);
           valid = true;
-          return TraversalResult.createFoundResult(nonPersistedInodes, inodes, lockList);
+          return TraversalResult.createFoundResult(nonPersistedInodes, lockList);
         } else {
           throw new InvalidPathException(
               ExceptionMessage.PATH_COMPONENTS_INVALID_START.getMessage(pathComponents[0]));
@@ -1264,8 +1264,7 @@ public class InodeTree implements JournalEntryIterable {
    * mode at each path.
    *
    * @param pathComponents components of the path that are are traversing towards
-   * @param inodes inodes that are already locked and will no longer require locking,
-   *               modified in the method to return all inode along the path
+   * @param inodes inodes that are already locked and will no longer require locking
    * @param nonPersistedInodes nonPersistedInodes, modified in the method to return
    *                           all nonPersistedInodes
    * @param lockList lockList containing all locked inodes, modified in the method
@@ -1286,7 +1285,7 @@ public class InodeTree implements JournalEntryIterable {
         // The user might want to create the nonexistent directories, so return the traversal
         // result current inode with the last Inode taken, and the index of the first path
         // component that couldn't be found.
-        return TraversalResult.createNotFoundResult(i, nonPersistedInodes, inodes, lockList);
+        return TraversalResult.createNotFoundResult(i, nonPersistedInodes, lockList);
       }
       // Lock the existing next inode before proceeding.
       if (getLockModeForComponent(i, pathComponents.length, lockMode, lockHints)
@@ -1299,14 +1298,12 @@ public class InodeTree implements JournalEntryIterable {
         // The inode can't have any children. If this is the last path component, we're good.
         // Otherwise, we can't traverse further, so we clean up and throw an exception.
         if (i == pathComponents.length - 1) {
-          inodes.add(next);
-          return TraversalResult.createFoundResult(nonPersistedInodes, inodes, lockList);
+          return TraversalResult.createFoundResult(nonPersistedInodes, lockList);
         } else {
           throw new InvalidPathException(
               "Traversal failed. Component " + i + "(" + next.getName() + ") is a file");
         }
       } else {
-        inodes.add(next);
         if (!next.isPersisted()) {
           // next is a directory and not persisted
           nonPersistedInodes.add(next);
@@ -1314,7 +1311,7 @@ public class InodeTree implements JournalEntryIterable {
         current = next;
       }
     }
-    return TraversalResult.createFoundResult(nonPersistedInodes, inodes, lockList);
+    return TraversalResult.createFoundResult(nonPersistedInodes, lockList);
   }
 
   private static final class TraversalResult {
@@ -1324,28 +1321,22 @@ public class InodeTree implements JournalEntryIterable {
     /** The list of non-persisted inodes encountered during the traversal. */
     private final List<Inode<?>> mNonPersisted;
 
-    /** The list of all inodes encountered during the traversal. */
-    private final List<Inode<?>> mInodes;
-
     /** The {@link InodeLockList} managing the locks for the inodes. */
     private final InodeLockList mLockList;
 
     // TODO(gpang): consider a builder paradigm to iteratively build the traversal result.
-    static TraversalResult createFoundResult(List<Inode<?>> nonPersisted, List<Inode<?>> inodes,
-        InodeLockList lockList) {
-      return new TraversalResult(true, nonPersisted, inodes, lockList);
+    static TraversalResult createFoundResult(List<Inode<?>> nonPersisted, InodeLockList lockList) {
+      return new TraversalResult(true, nonPersisted, lockList);
     }
 
     static TraversalResult createNotFoundResult(int index, List<Inode<?>> nonPersisted,
-        List<Inode<?>> inodes, InodeLockList lockList) {
-      return new TraversalResult(false, nonPersisted, inodes, lockList);
+        InodeLockList lockList) {
+      return new TraversalResult(false, nonPersisted, lockList);
     }
 
-    private TraversalResult(boolean found, List<Inode<?>> nonPersisted,
-        List<Inode<?>> inodes, InodeLockList lockList) {
+    private TraversalResult(boolean found, List<Inode<?>> nonPersisted, InodeLockList lockList) {
       mFound = found;
       mNonPersisted = nonPersisted;
-      mInodes = inodes;
       mLockList = lockList;
     }
 
@@ -1361,13 +1352,6 @@ public class InodeTree implements JournalEntryIterable {
      */
     List<Inode<?>> getNonPersisted() {
       return mNonPersisted;
-    }
-
-    /**
-     * @return the list of all inodes encountered during the traversal
-     */
-    List<Inode<?>> getInodes() {
-      return mInodes;
     }
 
     /**
