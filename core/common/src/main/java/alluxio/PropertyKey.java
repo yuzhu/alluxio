@@ -1617,6 +1617,12 @@ public final class PropertyKey implements Comparable<PropertyKey> {
           .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
           .setScope(Scope.MASTER)
           .build();
+  public static final PropertyKey MASTER_RPC_FORKJOIN_POOL_PARALLELISM=
+          new Builder("alluxio.master.fork.parallelism")
+                  .setDefaultValue(25)
+                  .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+                  .setScope(Scope.MASTER)
+                  .build();
   public static final PropertyKey MASTER_WHITELIST =
       new Builder(Name.MASTER_WHITELIST)
           .setDefaultValue("/")
@@ -1634,9 +1640,9 @@ public final class PropertyKey implements Comparable<PropertyKey> {
               + "This property determines the wait time.")
           .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
           .setScope(Scope.MASTER)
-          .build();
+              .build();
   public static final PropertyKey MASTER_WORKER_THREADS_MAX =
-      new Builder(Name.MASTER_WORKER_THREADS_MAX)
+          new Builder(Name.MASTER_WORKER_THREADS_MAX)
           .setDefaultSupplier(() -> {
             try {
               java.lang.management.OperatingSystemMXBean os =

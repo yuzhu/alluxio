@@ -43,6 +43,9 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 
@@ -365,8 +368,6 @@ public class AlluxioMasterProcess implements MasterProcess {
    * {@link Master}s and meta services.
    */
   protected void startServingRPCServer() {
-    // TODO(ggezer) Executor threads not reused until thread capacity is hit.
-    // ExecutorService executorService = Executors.newFixedThreadPool(mMaxWorkerThreads);
     try {
       if (mBindSocket != null) {
         // Server socket opened for auto bind.
@@ -376,6 +377,11 @@ public class AlluxioMasterProcess implements MasterProcess {
 
       LOG.info("Starting gRPC server on address {}", mRpcBindAddress);
       GrpcServerBuilder serverBuilder = GrpcServerBuilder.forAddress(mRpcBindAddress);
+
+      ExecutorService executorService =
+          new ForkJoinPool(Configuration.getInt(PropertyKey.MASTER_RPC_FORKJOIN_POOL_PARALLELISM));
+      serverBuilder.executor(executorService);
+      
       for (Master master : mRegistry.getServers()) {
         registerServices(serverBuilder, master.getServices());
       }
@@ -386,6 +392,7 @@ public class AlluxioMasterProcess implements MasterProcess {
 
       // Wait until the server is shut down.
       mGrpcServer.awaitTermination();
+      executorService.shutdown();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -414,5 +421,22 @@ public class AlluxioMasterProcess implements MasterProcess {
   @Override
   public String toString() {
     return "Alluxio master @" + mRpcConnectAddress;
+  }
+
+  class QueueTaker<E> implements ForkJoinPool.ManagedBlocker {
+    final BlockingQueue<E> queue;
+    volatile E item = null;
+    QueueTaker(BlockingQueue<E> q) { this.queue = q; }
+    public boolean block() throws InterruptedException {
+      if (item == null)
+        item = queue.take();
+      return true;
+    }
+    public boolean isReleasable() {
+      return item != null || (item = queue.poll()) != null;
+    }
+    public E getItem() { // call after pool.managedBlock completes
+      return item;
+    }
   }
 }
