@@ -57,7 +57,7 @@
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
+      <artifactId>hamcrest</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -184,16 +184,6 @@
     <dependency>
       <groupId>org.alluxio</groupId>
       <artifactId>alluxio-core-server-worker</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.alluxio</groupId>
-      <artifactId>alluxio-keyvalue-client</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.alluxio</groupId>
-      <artifactId>alluxio-keyvalue-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

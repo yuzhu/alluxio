@@ -16,10 +16,12 @@ import static org.junit.Assert.assertTrue;
 import alluxio.AlluxioURI;
 import alluxio.ConfigurationRule;
 import alluxio.Constants;
-import alluxio.PropertyKey;
+import alluxio.conf.PropertyKey;
 import alluxio.client.file.FileSystem;
+import alluxio.conf.ServerConfiguration;
 import alluxio.exception.FileAlreadyExistsException;
 import alluxio.exception.FileDoesNotExistException;
+import alluxio.grpc.GrpcManagedChannelPool;
 import alluxio.multi.process.MultiProcessCluster;
 import alluxio.multi.process.MultiProcessCluster.DeployMode;
 import alluxio.multi.process.PortCoordination;
@@ -28,6 +30,7 @@ import alluxio.util.CommonUtils;
 import alluxio.util.WaitForOptions;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -45,9 +48,15 @@ public final class EmbeddedJournalIntegrationTest extends BaseIntegrationTest {
 
   @Rule
   public ConfigurationRule mConf =
-      new ConfigurationRule(PropertyKey.USER_METRICS_COLLECTION_ENABLED, "false");
+      new ConfigurationRule(PropertyKey.USER_METRICS_COLLECTION_ENABLED, "false",
+          ServerConfiguration.global());
 
   public MultiProcessCluster mCluster;
+
+  @Before
+  public void before() throws Exception {
+    GrpcManagedChannelPool.renewChannelPool(1000, 1000);
+  }
 
   @After
   public void after() throws Exception {

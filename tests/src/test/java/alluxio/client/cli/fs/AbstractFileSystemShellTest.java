@@ -21,6 +21,7 @@ import alluxio.cli.job.JobShell;
 import alluxio.client.file.FileInStream;
 import alluxio.client.file.FileSystem;
 import alluxio.client.file.FileSystemTestUtils;
+import alluxio.conf.ServerConfiguration;
 import alluxio.exception.AlluxioException;
 import alluxio.grpc.OpenFilePOptions;
 import alluxio.grpc.ReadPType;
@@ -29,10 +30,13 @@ import alluxio.master.LocalAlluxioCluster;
 import alluxio.master.LocalAlluxioJobCluster;
 import alluxio.master.job.JobMaster;
 import alluxio.security.LoginUserTestUtils;
+import alluxio.testutils.IntegrationTestUtils;
+import alluxio.testutils.LocalAlluxioClusterResource;
 import alluxio.util.CommonUtils;
 import alluxio.util.WaitForOptions;
 import alluxio.util.io.BufferUtils;
 import alluxio.util.io.PathUtils;
+import alluxio.util.network.NetworkAddressUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -42,6 +46,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -55,16 +61,26 @@ public abstract class AbstractFileSystemShellTest extends AbstractShellIntegrati
   protected JobMaster mJobMaster;
   protected LocalAlluxioJobCluster mLocalAlluxioJobCluster = null;
   protected JobShell mJobShell = null;
+  protected Map<NetworkAddressUtils.ServiceType, ServerSocket> mServiceMapping;
+
+  @Override
+  protected void customizeLocalAlluxioCluster(LocalAlluxioClusterResource.Builder resource) {
+    mServiceMapping = IntegrationTestUtils.createMasterServiceMapping();
+    resource.setSockets(mServiceMapping.get(NetworkAddressUtils.ServiceType.MASTER_RPC),
+        mServiceMapping.get(NetworkAddressUtils.ServiceType.MASTER_WEB));
+  }
 
   @Before
   public final void before() throws Exception {
     mLocalAlluxioCluster = mLocalAlluxioClusterResource.get();
-    mFileSystem = mLocalAlluxioCluster.getClient();
-    mFsShell = new FileSystemShell();
-    mLocalAlluxioJobCluster = new alluxio.master.LocalAlluxioJobCluster();
+    mLocalAlluxioJobCluster = new LocalAlluxioJobCluster(
+        mServiceMapping.get(NetworkAddressUtils.ServiceType.JOB_MASTER_RPC),
+        mServiceMapping.get(NetworkAddressUtils.ServiceType.JOB_MASTER_WEB));
     mLocalAlluxioJobCluster.start();
+    mFileSystem = mLocalAlluxioCluster.getClient();
     mJobMaster = mLocalAlluxioJobCluster.getMaster().getJobMaster();
-    mJobShell = new alluxio.cli.job.JobShell();
+    mJobShell = new alluxio.cli.job.JobShell(ServerConfiguration.global());
+    mFsShell = new FileSystemShell(ServerConfiguration.global());
   }
 
   @After

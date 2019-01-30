@@ -13,9 +13,9 @@ package alluxio.testutils.master;
 
 import static org.mockito.Mockito.mock;
 
-import alluxio.Configuration;
+import alluxio.conf.ServerConfiguration;
 import alluxio.Constants;
-import alluxio.PropertyKey;
+import alluxio.conf.PropertyKey;
 import alluxio.master.BackupManager;
 import alluxio.master.CoreMasterContext;
 import alluxio.master.MasterRegistry;
@@ -27,6 +27,8 @@ import alluxio.master.file.FileSystemMasterFactory;
 import alluxio.master.file.StartupConsistencyCheck.Status;
 import alluxio.master.journal.JournalSystem;
 import alluxio.master.journal.JournalTestUtils;
+import alluxio.master.metastore.heap.HeapBlockStore;
+import alluxio.master.metastore.heap.HeapInodeStore;
 import alluxio.master.metrics.MetricsMasterFactory;
 import alluxio.util.CommonUtils;
 import alluxio.util.WaitForOptions;
@@ -64,16 +66,18 @@ public class MasterTestUtils {
    */
   private static MasterRegistry createFileSystemMasterFromJournal(boolean isLeader)
       throws Exception {
-    String masterJournal = Configuration.get(PropertyKey.MASTER_JOURNAL_FOLDER);
+    String masterJournal = ServerConfiguration.get(PropertyKey.MASTER_JOURNAL_FOLDER);
     MasterRegistry registry = new MasterRegistry();
     SafeModeManager safeModeManager = new TestSafeModeManager();
     long startTimeMs = System.currentTimeMillis();
-    int port = Configuration.getInt(PropertyKey.MASTER_RPC_PORT);
+    int port = ServerConfiguration.getInt(PropertyKey.MASTER_RPC_PORT);
     JournalSystem journalSystem = JournalTestUtils.createJournalSystem(masterJournal);
     CoreMasterContext masterContext = CoreMasterContext.newBuilder()
         .setJournalSystem(journalSystem)
         .setSafeModeManager(safeModeManager)
         .setBackupManager(mock(BackupManager.class))
+        .setBlockStoreFactory(args -> new HeapBlockStore(args))
+        .setInodeStoreFactory(args -> new HeapInodeStore(args))
         .setStartTimeMs(startTimeMs)
         .setPort(port)
         .build();

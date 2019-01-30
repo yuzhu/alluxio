@@ -13,10 +13,11 @@ package alluxio.master.job;
 
 import alluxio.Constants;
 import alluxio.RestUtils;
+import alluxio.conf.ServerConfiguration;
 import alluxio.job.JobConfig;
 import alluxio.job.ServiceConstants;
 import alluxio.job.wire.JobInfo;
-import alluxio.master.JobMasterProcess;
+import alluxio.master.AlluxioJobMasterProcess;
 import alluxio.web.JobMasterWebServer;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -50,7 +51,7 @@ public final class JobMasterClientRestServiceHandler {
    */
   public JobMasterClientRestServiceHandler(@Context ServletContext context) {
     // Poor man's dependency injection through the Jersey application scope.
-    mJobMaster = ((JobMasterProcess) context
+    mJobMaster = ((AlluxioJobMasterProcess) context
         .getAttribute(JobMasterWebServer.ALLUXIO_JOB_MASTER_SERVLET_RESOURCE_KEY)).getJobMaster();
   }
 
@@ -66,7 +67,7 @@ public final class JobMasterClientRestServiceHandler {
       public String call() throws Exception {
         return Constants.JOB_MASTER_CLIENT_SERVICE_NAME;
       }
-    });
+    }, ServerConfiguration.global());
   }
 
   /**
@@ -80,7 +81,7 @@ public final class JobMasterClientRestServiceHandler {
       public Integer call() throws Exception {
         return Constants.JOB_MASTER_CLIENT_SERVICE_VERSION;
       }
-    });
+    }, ServerConfiguration.global());
   }
 
   /**
@@ -98,7 +99,7 @@ public final class JobMasterClientRestServiceHandler {
         mJobMaster.cancel(jobId);
         return null;
       }
-    });
+    }, ServerConfiguration.global());
   }
 
   /**
@@ -116,7 +117,7 @@ public final class JobMasterClientRestServiceHandler {
       public JobInfo call() throws Exception {
         return mJobMaster.getStatus(jobId);
       }
-    });
+    }, ServerConfiguration.global());
   }
 
   /**
@@ -132,7 +133,7 @@ public final class JobMasterClientRestServiceHandler {
       public List<Long> call() throws Exception {
         return mJobMaster.list();
       }
-    });
+    }, ServerConfiguration.global());
   }
 
   /**
@@ -150,6 +151,6 @@ public final class JobMasterClientRestServiceHandler {
       public Long call() throws Exception {
         return mJobMaster.run(jobConfig);
       }
-    });
+    }, ServerConfiguration.global());
   }
 }

@@ -11,6 +11,8 @@
 
 package alluxio.security.authentication;
 
+import alluxio.conf.AlluxioConfiguration;
+import alluxio.conf.PropertyKey;
 import alluxio.exception.status.UnauthenticatedException;
 import alluxio.exception.status.UnavailableException;
 import alluxio.grpc.SaslAuthenticationServiceGrpc;
@@ -50,20 +52,27 @@ public class ChannelAuthenticator {
   /** Authentication type to use with the target host. */
   protected AuthType mAuthType;
 
+  /** gRPC Authentication timeout in milliseconds. */
+  protected final long mGrpcAuthTimeoutMs;
+
   /** Internal ID used to identify the channel that is being authenticated. */
   protected UUID mChannelId;
+
+  private boolean mSecurityEnabled;
 
   /**
    * Creates {@link ChannelAuthenticator} instance.
    *
    * @param subject javax subject to use for authentication
-   * @param authType authentication type
+   * @param conf Alluxio configuration
    */
-  public ChannelAuthenticator(Subject subject, AuthType authType) {
+  public ChannelAuthenticator(Subject subject, AlluxioConfiguration conf) {
     mUseSubject = true;
     mChannelId = UUID.randomUUID();
     mParentSubject = subject;
-    mAuthType = authType;
+    mAuthType = conf.getEnum(PropertyKey.SECURITY_AUTHENTICATION_TYPE, AuthType.class);
+    mSecurityEnabled = SecurityUtils.isSecurityEnabled(conf);
+    mGrpcAuthTimeoutMs = conf.getMs(PropertyKey.MASTER_GRPC_CHANNEL_AUTH_TIMEOUT);
   }
 
   /**
@@ -73,15 +82,17 @@ public class ChannelAuthenticator {
    * @param password user password
    * @param impersonationUser impersonation user
    * @param authType authentication type
+   * @param grpcAuthTimeoutMs authentication timeout in milliseconds
    */
   public ChannelAuthenticator(String userName, String password, String impersonationUser,
-      AuthType authType) {
+      AuthType authType, long grpcAuthTimeoutMs) {
     mUseSubject = false;
     mChannelId = UUID.randomUUID();
     mUserName = userName;
     mPassword = password;
     mImpersonationUser = impersonationUser;
     mAuthType = authType;
+    mGrpcAuthTimeoutMs = grpcAuthTimeoutMs;
   }
 
   /**
@@ -89,10 +100,11 @@ public class ChannelAuthenticator {
    * the channel based on authentication type.
    *
    * @param managedChannel the managed channel for whch authentication is taking place
+   * @param conf Alluxio configuration
    * @return channel that is augmented for authentication
    * @throws UnauthenticatedException
    */
-  public Channel authenticate(ManagedChannel managedChannel)
+  public Channel authenticate(ManagedChannel managedChannel, AlluxioConfiguration conf)
       throws UnauthenticatedException, UnavailableException {
     if (mAuthType == AuthType.NOSASL) {
       return managedChannel;
@@ -103,7 +115,7 @@ public class ChannelAuthenticator {
     SaslClient saslClient;
     if (mUseSubject) {
       saslClient =
-          SaslParticipantProvider.Factory.create(mAuthType).createSaslClient(mParentSubject);
+          SaslParticipantProvider.Factory.create(mAuthType).createSaslClient(mParentSubject, conf);
     } else {
       saslClient = SaslParticipantProvider.Factory.create(mAuthType).createSaslClient(mUserName,
           mPassword, mImpersonationUser);
@@ -113,7 +125,8 @@ public class ChannelAuthenticator {
     SaslHandshakeClientHandler handshakeClient =
         SaslHandshakeClientHandler.Factory.create(mAuthType, saslClient);
     // Create driver for driving sasl traffic from client side.
-    SaslStreamClientDriver clientDriver = new SaslStreamClientDriver(handshakeClient);
+    SaslStreamClientDriver clientDriver =
+        new SaslStreamClientDriver(handshakeClient, mGrpcAuthTimeoutMs);
     // Start authentication call with the service and update the client driver.
     StreamObserver<SaslMessage> requestObserver =
         SaslAuthenticationServiceGrpc.newStub(managedChannel).authenticate(clientDriver);
@@ -133,7 +146,7 @@ public class ChannelAuthenticator {
    * @return the list of interceptors that are required for configured authentication
    */
   private List<ClientInterceptor> getInterceptors(SaslClient saslClient) {
-    if (!SecurityUtils.isSecurityEnabled()) {
+    if (!mSecurityEnabled) {
       return Collections.emptyList();
     }
     List<ClientInterceptor> interceptorsList = new ArrayList<>();

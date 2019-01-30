@@ -16,15 +16,18 @@ import static org.junit.Assert.assertTrue;
 
 import alluxio.AlluxioTestDirectory;
 import alluxio.AlluxioURI;
+import alluxio.ClientContext;
 import alluxio.ConfigurationRule;
 import alluxio.Constants;
-import alluxio.PropertyKey;
+import alluxio.conf.PropertyKey;
 import alluxio.client.MetaMasterClient;
 import alluxio.client.RetryHandlingMetaMasterClient;
 import alluxio.client.file.FileSystem;
+import alluxio.conf.ServerConfiguration;
 import alluxio.grpc.CreateDirectoryPOptions;
+import alluxio.grpc.GrpcManagedChannelPool;
 import alluxio.grpc.WritePType;
-import alluxio.master.MasterClientConfig;
+import alluxio.master.MasterClientContext;
 import alluxio.multi.process.MultiProcessCluster;
 import alluxio.multi.process.MultiProcessCluster.DeployMode;
 import alluxio.multi.process.PortCoordination;
@@ -32,6 +35,7 @@ import alluxio.testutils.AlluxioOperationThread;
 import alluxio.testutils.BaseIntegrationTest;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,7 +56,12 @@ public final class JournalBackupIntegrationTest extends BaseIntegrationTest {
     {
       put(PropertyKey.USER_METRICS_COLLECTION_ENABLED, "false");
     }
-  });
+  }, ServerConfiguration.global());
+
+  @Before
+  public void before() throws Exception {
+    GrpcManagedChannelPool.renewChannelPool(2000, 2000);
+  }
 
   @After
   public void after() throws Exception {
@@ -153,6 +162,8 @@ public final class JournalBackupIntegrationTest extends BaseIntegrationTest {
 
   private MetaMasterClient getMetaClient(MultiProcessCluster cluster) {
     return new RetryHandlingMetaMasterClient(
-        MasterClientConfig.defaults().withMasterInquireClient(cluster.getMasterInquireClient()));
+        MasterClientContext.newBuilder(ClientContext.create(ServerConfiguration.global()))
+            .setMasterInquireClient(cluster.getMasterInquireClient())
+            .build());
   }
 }

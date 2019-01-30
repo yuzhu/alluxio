@@ -11,10 +11,10 @@
 
 package alluxio.master;
 
-import alluxio.Configuration;
+import alluxio.conf.ServerConfiguration;
 import alluxio.Constants;
 import alluxio.ProcessUtils;
-import alluxio.PropertyKey;
+import alluxio.conf.PropertyKey;
 import alluxio.master.PrimarySelector.State;
 import alluxio.master.journal.JournalSystem;
 import alluxio.util.CommonUtils;
@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -42,7 +43,7 @@ final class FaultTolerantAlluxioMasterProcess extends AlluxioMasterProcess {
       LoggerFactory.getLogger(FaultTolerantAlluxioMasterProcess.class);
 
   private final long mServingThreadTimeoutMs =
-      Configuration.getMs(PropertyKey.MASTER_SERVING_THREAD_TIMEOUT);
+      ServerConfiguration.getMs(PropertyKey.MASTER_SERVING_THREAD_TIMEOUT);
 
   private PrimarySelector mLeaderSelector;
   private Thread mServingThread;
@@ -51,8 +52,8 @@ final class FaultTolerantAlluxioMasterProcess extends AlluxioMasterProcess {
    * Creates a {@link FaultTolerantAlluxioMasterProcess}.
    */
   protected FaultTolerantAlluxioMasterProcess(JournalSystem journalSystem,
-      PrimarySelector leaderSelector) {
-    super(journalSystem);
+      PrimarySelector leaderSelector, ServerSocket rpcBindSocket, ServerSocket webBindSocket) {
+    super(journalSystem, rpcBindSocket, webBindSocket);
     try {
       stopServing();
     } catch (Exception e) {

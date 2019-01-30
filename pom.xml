@@ -172,11 +172,11 @@
   </properties>
 
   <modules>
+    <module>alluxio-ui</module>
     <module>assembly</module>
     <module>core</module>
     <module>examples</module>
     <module>integration</module>
-    <module>keyvalue</module>
     <module>logserver</module>
     <module>minicluster</module>
     <module>job</module>
@@ -655,6 +655,11 @@
         <version>0.9.10</version>
       </dependency>
       <dependency>
+        <groupId>org.rocksdb</groupId>
+        <artifactId>rocksdbjni</artifactId>
+        <version>5.15.10</version>
+      </dependency>
+      <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j.version}</version>
@@ -695,16 +700,11 @@
         <version>${hadoop.version}</version>
         <scope>test</scope>
       </dependency>
+      <!-- TODO(andrew): Update to a non-rc version before final Alluxio release -->
       <dependency>
         <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-core</artifactId>
-        <version>1.3</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-all</artifactId>
-        <version>1.3</version>
+        <artifactId>hamcrest</artifactId>
+        <version>2.1-rc4</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -803,7 +803,7 @@
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
+      <artifactId>hamcrest</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -1177,16 +1177,16 @@
             <exclude>**/src/main/java/alluxio/proto/**</exclude>
             <exclude>**/src/main/java/alluxio/grpc/**</exclude>
             <exclude>**/src/main/resources/*</exclude>
-            <exclude>**/src/main/webapp/css/*</exclude>
-            <exclude>**/src/main/webapp/js/*</exclude>
             <exclude>**/src/proto/**</exclude>
             <exclude>**/src/deb/**/*</exclude>
             <exclude>**/src/test/resources/**</exclude>
             <exclude>**/dev/scripts/vendor/**</exclude>
             <exclude>**/dev/scripts/src/vendor/**</exclude>
             <exclude>**/vagrant/**/*</exclude>
+            <exclude>**/\?/.java/**/*</exclude>
 
             <!-- Build and Packaging Exclusions -->
+            <exclude>alluxio-ui/node_modules/*</exclude>
             <exclude>build/**/*</exclude>
             <exclude>conf/alluxio-env.sh</exclude>
             <exclude>conf/alluxio-site.properties</exclude>
@@ -1198,6 +1198,13 @@
             <exclude>**/.checkstyle</exclude>
             <exclude>**/src/main/assembly/*</exclude>
             <exclude>**/.idea/**</exclude>
+            <exclude>alluxio-ui/**/.nvmrc</exclude>
+            <exclude>alluxio-ui/**/*.svg</exclude>
+            <exclude>alluxio-ui/**/.env*</exclude>
+            <exclude>alluxio-ui/**/node/**</exclude>
+            <exclude>alluxio-ui/**/node_modules/**</exclude>
+            <exclude>alluxio-ui/**/src/**/*.css</exclude>
+            <exclude>alluxio-ui/**/build/**</exclude>
 
             <!-- Documentation Exclusions -->
             <exclude>docs/**/*</exclude>
@@ -1213,6 +1220,8 @@
             <alluxio>SCRIPT_STYLE</alluxio>
             <go>SLASHSTAR_STYLE</go>
             <java>SLASHSTAR_STYLE</java>
+            <tsx>SLASHSTAR_STYLE</tsx>
+            <scss>SLASHSTAR_STYLE</scss>
             <properties.template>SCRIPT_STYLE</properties.template>
             <sh.template>SCRIPT_STYLE</sh.template>
             <workers>SCRIPT_STYLE</workers>
@@ -1327,32 +1336,6 @@
       </properties>
     </profile>
 
-    <!-- profile that compiles jsp files -->
-    <profile>
-      <id>compileJsp</id>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.sling</groupId>
-              <artifactId>maven-jspc-plugin</artifactId>
-              <executions>
-                <execution>
-                  <phase>prepare-package</phase>
-                  <id>compile-jsp</id>
-                  <goals>
-                    <goal>jspc</goal>
-                  </goals>
-                  <configuration>
-                    <sourceDirectory>src/main/webapp</sourceDirectory>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
     <profile>
       <id>generateDocs</id>
       <build>
