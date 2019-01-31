@@ -1691,7 +1691,7 @@ public final class PropertyKey implements Comparable<PropertyKey> {
           .build();
   public static final PropertyKey MASTER_RPC_FORKJOIN_POOL_PARALLELISM=
           new Builder("alluxio.master.fork.parallelism")
-                  .setDefaultValue(25)
+                  .setDefaultValue(64)
                   .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
                   .setScope(Scope.MASTER)
                   .build();
