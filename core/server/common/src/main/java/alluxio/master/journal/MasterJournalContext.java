@@ -94,7 +94,6 @@ public final class MasterJournalContext implements JournalContext, ForkJoinPool.
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
-    waitForJournalFlush();
   }
 
   @Override
