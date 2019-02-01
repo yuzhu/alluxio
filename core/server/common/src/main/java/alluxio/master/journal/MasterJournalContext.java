@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.ForkJoinPool;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -32,7 +33,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  * Context for storing master journal information.
  */
 @NotThreadSafe
-public final class MasterJournalContext implements JournalContext {
+public final class MasterJournalContext implements JournalContext, ForkJoinPool.ManagedBlocker {
   private static final Logger LOG = LoggerFactory.getLogger(MasterJournalContext.class);
   private static final long INVALID_FLUSH_COUNTER = -1;
   private static final long FLUSH_RETRY_TIMEOUT_MS =
@@ -88,6 +89,26 @@ public final class MasterJournalContext implements JournalContext {
 
   @Override
   public void close() throws UnavailableException {
+    try {
+      ForkJoinPool.managedBlock(this);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
     waitForJournalFlush();
+  }
+
+  @Override
+  public boolean block() throws InterruptedException{
+    try {
+      waitForJournalFlush();
+    } catch (UnavailableException e) {
+      throw new RuntimeException(e);
+    }
+    return true;
+  }
+
+  @Override
+  public boolean isReleasable() {
+    return (mFlushCounter == INVALID_FLUSH_COUNTER);
   }
 }
