@@ -149,4 +149,8 @@ public final class AsyncJournalWriter {
       mFlushCounter.set(writeCounter);
     }
   }
+
+  public boolean shouldFlush(long targetCounter) {
+    return (targetCounter > mFlushCounter.get());
+  }
 }

@@ -108,6 +108,6 @@ public final class MasterJournalContext implements JournalContext, ForkJoinPool.
 
   @Override
   public boolean isReleasable() {
-    return (mFlushCounter == INVALID_FLUSH_COUNTER);
+    return (mFlushCounter == INVALID_FLUSH_COUNTER) || (!mAsyncJournalWriter.shouldFlush(mFlushCounter));
   }
 }
