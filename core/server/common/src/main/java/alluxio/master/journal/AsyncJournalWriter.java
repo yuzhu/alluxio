@@ -115,9 +115,10 @@ public final class AsyncJournalWriter {
     }
     // Using reentrant lock, since it seems to result in higher throughput than using 'synchronized'
     try (LockResource lr = new LockResource(mFlushLock)) {
-      LOG.info("flushing journal {}, thread id {}", targetCounter, Thread.currentThread().getId());
+
       long startTime = System.nanoTime();
       long flushCounter = mFlushCounter.get();
+      LOG.info("flushing journal {}, thread id {}, flushcounter {}", targetCounter, Thread.currentThread().getId(), flushCounter);
       if (targetCounter <= flushCounter) {
         // The specified counter is already flushed, so just return.
         return;
