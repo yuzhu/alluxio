@@ -18,6 +18,8 @@ import alluxio.proto.journal.Journal.JournalEntry;
 import alluxio.resource.LockResource;
 
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -44,6 +46,8 @@ public final class AsyncJournalWriter {
   private final AtomicLong mWriteCounter;
   /** Maximum number of nanoseconds for a batch flush. */
   private final long mFlushBatchTimeNs;
+
+  private static final Logger LOG = LoggerFactory.getLogger(AsyncJournalWriter.class);
 
   /**
    * Use a {@link ReentrantLock} to guard the journal writing. Using the fairness policy seems to
@@ -111,6 +115,7 @@ public final class AsyncJournalWriter {
     }
     // Using reentrant lock, since it seems to result in higher throughput than using 'synchronized'
     try (LockResource lr = new LockResource(mFlushLock)) {
+      LOG.info("flushing journal {}, thread id {}", targetCounter, Thread.currentThread().getId());
       long startTime = System.nanoTime();
       long flushCounter = mFlushCounter.get();
       if (targetCounter <= flushCounter) {
