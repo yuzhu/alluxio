@@ -41,10 +41,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.locks.Lock;
 
 import javax.annotation.Nullable;
@@ -288,7 +286,8 @@ public class AlluxioMasterProcess extends MasterProcess {
           ServerConfiguration.global());
 
       ExecutorService executorService =
-          Executors.newFixedThreadPool(ServerConfiguration.getInt(PropertyKey.MASTER_RPC_FORKJOIN_POOL_PARALLELISM));
+          Executors.newFixedThreadPool(ServerConfiguration.getInt(
+              PropertyKey.MASTER_RPC_FORKJOIN_POOL_PARALLELISM));
       serverBuilder.executor(executorService);
       for (Master master : mRegistry.getServers()) {
         registerServices(serverBuilder, master.getServices());
@@ -371,22 +370,5 @@ public class AlluxioMasterProcess extends MasterProcess {
     }
 
     private Factory() {} // prevent instantiation
-  }
-
-  class QueueTaker<E> implements ForkJoinPool.ManagedBlocker {
-    final BlockingQueue<E> queue;
-    volatile E item = null;
-    QueueTaker(BlockingQueue<E> q) { this.queue = q; }
-    public boolean block() throws InterruptedException {
-      if (item == null)
-        item = queue.take();
-      return true;
-    }
-    public boolean isReleasable() {
-      return item != null || (item = queue.poll()) != null;
-    }
-    public E getItem() { // call after pool.managedBlock completes
-      return item;
-    }
   }
 }
