@@ -24,9 +24,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.SettableFuture;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
@@ -89,13 +91,7 @@ public final class AsyncJournalWriter {
   /**
    * List of flush tickets submitted by ::flush() method.
    */
-  @GuardedBy("mTicketLock")
-  private final List<FlushTicket> mTicketList = new LinkedList<>();
-
-  /**
-   * Used to guard access to ticket cache.
-   */
-  private final ReentrantLock mTicketLock = new ReentrantLock(true);
+  private final Queue<FlushTicket> mTicketList = new ConcurrentLinkedQueue<>();
 
   /**
    * Dedicated thread for writing and flushing entries in journal queue.
@@ -259,28 +255,24 @@ public final class AsyncJournalWriter {
         }
 
         // Notify tickets that have been served to wake up.
-        try (LockResource lr = new LockResource(mTicketLock)) {
-          ListIterator<FlushTicket> ticketIterator = mTicketList.listIterator();
-          while (ticketIterator.hasNext()) {
-            FlushTicket ticket = ticketIterator.next();
-            if (ticket.getTargetCounter() <= mFlushCounter.get()) {
-              ticket.setCompleted();
-              ticketIterator.remove();
-            }
+        Iterator<FlushTicket> ticketIterator = mTicketList.iterator();
+        while (ticketIterator.hasNext()) {
+          FlushTicket ticket = ticketIterator.next();
+          if (ticket.getTargetCounter() <= mFlushCounter.get()) {
+            ticket.setCompleted();
+            ticketIterator.remove();
           }
         }
       } catch (IOException | JournalClosedException exc) {
         // Release only tickets that have been flushed. Fail the rest.
-        try (LockResource lr = new LockResource(mTicketLock)) {
-          ListIterator<FlushTicket> ticketIterator = mTicketList.listIterator();
-          while (ticketIterator.hasNext()) {
-            FlushTicket ticket = ticketIterator.next();
-            ticketIterator.remove();
-            if (ticket.getTargetCounter() <= mFlushCounter.get()) {
-              ticket.setCompleted();
-            } else {
-              ticket.setError(exc);
-            }
+        Iterator<FlushTicket> ticketIterator = mTicketList.iterator();
+        while (ticketIterator.hasNext()) {
+          FlushTicket ticket = ticketIterator.next();
+          ticketIterator.remove();
+          if (ticket.getTargetCounter() <= mFlushCounter.get()) {
+            ticket.setCompleted();
+          } else {
+            ticket.setError(exc);
           }
         }
       }
@@ -302,9 +294,7 @@ public final class AsyncJournalWriter {
 
     // Submit the ticket for flush thread to process.
     FlushTicket ticket = new FlushTicket(targetCounter);
-    try (LockResource lr = new LockResource(mTicketLock)) {
-      mTicketList.add(ticket);
-    }
+    mTicketList.add(ticket);
 
     try {
       // Give a permit for flush thread to run.
