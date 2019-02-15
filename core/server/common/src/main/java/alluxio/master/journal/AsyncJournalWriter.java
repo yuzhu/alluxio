@@ -22,6 +22,8 @@ import alluxio.resource.LockResource;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.SettableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -71,6 +73,7 @@ public final class AsyncJournalWriter {
     }
   }
 
+  private static final Logger LOG = LoggerFactory.getLogger(AsyncJournalWriter.class);
   private final JournalWriter mJournalWriter;
   private final ConcurrentLinkedQueue<JournalEntry> mQueue;
   /** Represents the count of entries added to the journal queue. */
@@ -216,6 +219,7 @@ public final class AsyncJournalWriter {
        *   - clients
        *   -::stop()
        */
+
       while (mQueue.isEmpty() && !mStopFlushing) {
         try {
           // Wait for permit up to batch timeout.
@@ -231,7 +235,7 @@ public final class AsyncJournalWriter {
 
       try {
         long startTime = System.nanoTime();
-
+        int countBatch = 0;
         // Write pending entries to journal.
         while (!mQueue.isEmpty()) {
           // Get, but do not remove, the head entry.
@@ -244,6 +248,7 @@ public final class AsyncJournalWriter {
           // Remove the head entry, after the entry was successfully written.
           mQueue.poll();
           mWriteCounter++;
+          countBatch++;
 
           if (((System.nanoTime() - startTime) >= mFlushBatchTimeNs) && !mStopFlushing) {
             // This thread has been writing to the journal for enough time. Break out of the
@@ -251,6 +256,7 @@ public final class AsyncJournalWriter {
             break;
           }
         }
+        LOG.info("batch size {}", countBatch);
 
         // Either written new entries or previous flush had been failed.
         if (mFlushCounter.get() < mWriteCounter) {

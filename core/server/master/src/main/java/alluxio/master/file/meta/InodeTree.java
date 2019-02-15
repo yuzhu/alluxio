@@ -15,7 +15,6 @@ import alluxio.AlluxioURI;
 import alluxio.collections.Pair;
 import alluxio.conf.ServerConfiguration;
 import alluxio.concurrent.LockMode;
-import alluxio.conf.ServerConfiguration;
 import alluxio.exception.BlockInfoException;
 import alluxio.exception.ExceptionMessage;
 import alluxio.exception.FileAlreadyExistsException;
