@@ -305,7 +305,7 @@ public final class AsyncJournalWriter {
     if (targetCounter <= mFlushCounter.get()) {
       return;
     }
-
+    LOG.info("Active thread count {}", Thread.activeCount());
     // Submit the ticket for flush thread to process.
     FlushTicket ticket = new FlushTicket(targetCounter);
     try (LockResource lr = new LockResource(mTicketLock)) {
