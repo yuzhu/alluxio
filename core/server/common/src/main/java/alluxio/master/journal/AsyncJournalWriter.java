@@ -257,6 +257,7 @@ public final class AsyncJournalWriter {
           }
         }
         LOG.info("batch size {}", countBatch);
+        LOG.info("batch time {}", System.nanoTime() - startTime);
 
         // Either written new entries or previous flush had been failed.
         if (mFlushCounter.get() < mWriteCounter) {
