@@ -40,6 +40,7 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -281,7 +282,7 @@ public class AlluxioMasterProcess extends MasterProcess {
           ServerConfiguration.global());
 
       mRPCExecutor =
-          new ForkJoinPool(ServerConfiguration.getInt(
+          Executors.newFixedThreadPool(ServerConfiguration.getInt(
               PropertyKey.MASTER_RPC_FORKJOIN_POOL_PARALLELISM));
       serverBuilder.executor(mRPCExecutor);
       for (Master master : mRegistry.getServers()) {
