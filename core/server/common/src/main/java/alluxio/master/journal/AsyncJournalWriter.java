@@ -256,14 +256,15 @@ public final class AsyncJournalWriter {
             break;
           }
         }
-        LOG.info("batch size {}", countBatch);
-        LOG.info("batch time {}", System.nanoTime() - startTime);
 
         // Either written new entries or previous flush had been failed.
         if (mFlushCounter.get() < mWriteCounter) {
           mJournalWriter.flush();
           mFlushCounter.set(mWriteCounter);
         }
+
+        LOG.info("batch size {}", countBatch);
+        LOG.info("batch time {}", System.nanoTime() - startTime);
 
         // Notify tickets that have been served to wake up.
         try (LockResource lr = new LockResource(mTicketLock)) {
