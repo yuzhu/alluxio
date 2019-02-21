@@ -42,6 +42,8 @@ import java.net.URI;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
@@ -280,10 +282,11 @@ public class AlluxioMasterProcess extends MasterProcess {
       LOG.info("Starting gRPC server on address {}", mRpcBindAddress);
       GrpcServerBuilder serverBuilder = GrpcServerBuilder.forAddress(mRpcBindAddress,
           ServerConfiguration.global());
-
-      mRPCExecutor =
-          Executors.newFixedThreadPool(ServerConfiguration.getInt(
-              PropertyKey.MASTER_RPC_FORKJOIN_POOL_PARALLELISM));
+      int nThreads = ServerConfiguration.getInt(
+          PropertyKey.MASTER_RPC_FORKJOIN_POOL_PARALLELISM);
+      mRPCExecutor = new ThreadPoolExecutor(nThreads / 2, nThreads,
+          100L, TimeUnit.MILLISECONDS,
+          new LinkedBlockingQueue<>());
       serverBuilder.executor(mRPCExecutor);
       for (Master master : mRegistry.getServers()) {
         registerServices(serverBuilder, master.getServices());
