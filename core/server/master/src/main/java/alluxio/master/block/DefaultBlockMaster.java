@@ -78,6 +78,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -946,6 +947,7 @@ public final class DefaultBlockMaster extends CoreMaster implements BlockMaster 
    */
   @GuardedBy("masterBlockInfo")
   private Optional<BlockInfo> generateBlockInfo(long blockId) throws UnavailableException {
+    long startTime = System.nanoTime();
     if (mSafeModeManager.isInSafeMode()) {
       throw new UnavailableException(ExceptionMessage.MASTER_IN_SAFEMODE.getMessage());
     }
@@ -978,6 +980,8 @@ public final class DefaultBlockMaster extends CoreMaster implements BlockMaster 
             .setTierAlias(location.getTier()));
       }
     }
+    LOG.info("generateBlockInfo took {} ns" , System.nanoTime() - startTime);
+
     return Optional.of(
         new BlockInfo().setBlockId(blockId).setLength(block.getLength()).setLocations(locations));
   }
