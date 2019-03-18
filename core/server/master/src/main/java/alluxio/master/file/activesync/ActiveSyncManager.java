@@ -421,10 +421,6 @@ public class ActiveSyncManager implements Journaled {
         mSyncPathList.remove(syncPoint);
       } else {
         mSyncPathList.remove(syncPoint);
-        // We should not be in this situation
-        throw new RuntimeException(
-            String.format("mountId for the syncPoint %s not found in the filterMap",
-                syncPoint.toString()));
       }
     }
   }

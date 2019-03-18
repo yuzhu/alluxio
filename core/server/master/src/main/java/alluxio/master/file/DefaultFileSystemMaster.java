@@ -181,6 +181,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import io.grpc.ServerInterceptors;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -3717,6 +3718,7 @@ public final class DefaultFileSystemMaster extends CoreMaster implements FileSys
       try {
         mSyncManager.startSyncPostJournal(uri);
       } catch (Throwable e) {
+        LOG.info("caught e \n {}", ExceptionUtils.getStackTrace(e));
         // revert state;
         RemoveSyncPointEntry removeSyncPoint =
             File.RemoveSyncPointEntry.newBuilder()
