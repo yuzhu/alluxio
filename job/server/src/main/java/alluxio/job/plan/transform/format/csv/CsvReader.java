@@ -83,8 +83,10 @@ public final class CsvReader implements TableReader {
   private CSVProperties buildProperties(Map<String, String> tableProperties,
       Map<String, String> serdeProperties) {
     CSVProperties.Builder propsBuilder = new CSVProperties.Builder();
+    LOG.info("table prop \n" + tableProperties);
+    LOG.info("serde prop \n" + serdeProperties);
     if (tableProperties.containsKey(HiveConstants.LINES_TO_SKIP)) {
-      propsBuilder.hasHeader();
+      // propsBuilder.hasHeader();
       propsBuilder.linesToSkip(Integer.parseInt(tableProperties.get(HiveConstants.LINES_TO_SKIP)));
     }
     if (serdeProperties.containsKey(HiveConstants.FIELD_DELIM)) {
