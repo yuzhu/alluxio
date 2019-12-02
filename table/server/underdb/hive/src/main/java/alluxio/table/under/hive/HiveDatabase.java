@@ -239,18 +239,8 @@ public class HiveDatabase implements UnderDatabase {
     }
   }
 
-  HiveMetaStoreClient getHive() throws IOException {
-    if (mHive != null) {
-      try {
-        mHive.reconnect();
-      } catch (MetaException e) {
-        throw new IOException(String
-            .format("Failed to reconnect client to hive metastore: %s. error: %s", mConnectionUri,
-                e.getMessage()), e);
-      }
-      return mHive;
-    }
-
+  private HiveMetaStoreClient newHiveClient() throws IOException {
+    HiveMetaStoreClient client;
     // Hive uses/saves the thread context class loader.
     ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
     try {
@@ -258,9 +248,9 @@ public class HiveDatabase implements UnderDatabase {
       Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
       HiveConf conf = new HiveConf();
       conf.set("hive.metastore.uris", mConnectionUri);
-      mHive = new HiveMetaStoreClient(conf);
-      mHive.getDatabase(mHiveDbName);
-      return mHive;
+      client = new HiveMetaStoreClient(conf);
+      client.getDatabase(mHiveDbName);
+      return client;
     } catch (NoSuchObjectException e) {
       throw new IOException(String
           .format("hive db name '%s' does not exist at metastore: %s", mHiveDbName, mConnectionUri),
@@ -273,5 +263,20 @@ public class HiveDatabase implements UnderDatabase {
     } finally {
       Thread.currentThread().setContextClassLoader(currentClassLoader);
     }
+  }
+
+  HiveMetaStoreClient getHive() throws IOException {
+    if (mHive != null) {
+      try {
+        mHive.getAllDatabases(); // test the connection
+      } catch (TException e) {
+        LOG.info("Hive metastore client disconnected, attempting to reconnect");
+        mHive = newHiveClient();
+      }
+      return mHive;
+    }
+
+    mHive = newHiveClient();
+    return mHive;
   }
 }
