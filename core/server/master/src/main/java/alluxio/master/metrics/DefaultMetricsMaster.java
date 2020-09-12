@@ -34,6 +34,8 @@ import alluxio.util.executor.ExecutorServiceFactories;
 import alluxio.util.executor.ExecutorServiceFactory;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.SlidingWindowReservoir;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -54,6 +57,9 @@ public class DefaultMetricsMaster extends CoreMaster implements MetricsMaster, N
   // A map from the to be aggregated metric name to aggregator itself
   // This registry only holds aggregator for master metrics
   private final Map<String, MultiValueMetricsAggregator> mAggregatorRegistry = new HashMap<>();
+
+  // A map from the name of the counter to the name of the
+  private final Map<String, String> mSlidingWindowRegisry = new HashMap<>();
   private final MetricsStore mMetricsStore;
 
   /**
@@ -87,6 +93,20 @@ public class DefaultMetricsMaster extends CoreMaster implements MetricsMaster, N
     mAggregatorRegistry.put(aggregator.getFilterMetricName(), aggregator);
   }
 
+  private void updateSlidingWindowMasterMetrics() {
+    Map<String, Set<Metric>> masterMetricsMap
+        = MetricsSystem.getMasterMetrics(mSlidingWindowRegisry.keySet());
+    for (Map.Entry<String, Set<Metric>> entry : masterMetricsMap.entrySet()) {
+      if (entry.getValue().size() > 1) {
+        throw new UnsupportedOperationException("Clusterwide metrics should not have multiple entries");
+      }
+      Optional<Metric> reportedVal = entry.getValue().stream().findFirst();
+      double count = reportedVal.isPresent() ? reportedVal.get().getValue() : 0;
+      String slidingWindowMetricName = mSlidingWindowRegisry.get(entry.getKey());
+      MetricsSystem.histogram(slidingWindowMetricName).update(Math.round(count));
+    }
+  }
+
   private void updateMultiValueMasterMetrics() {
     Map<String, Set<Metric>> masterMetricsMap
         = MetricsSystem.getMasterMetrics(mAggregatorRegistry.keySet());
@@ -105,22 +125,23 @@ public class DefaultMetricsMaster extends CoreMaster implements MetricsMaster, N
 
   private void registerAggregators() {
     // worker metrics
-    registerThroughputGauge(MetricKey.CLUSTER_BYTES_READ_ALLUXIO.getName(),
+    registerTimeSeries(MetricKey.CLUSTER_BYTES_READ_ALLUXIO.getName(),
         MetricKey.CLUSTER_BYTES_READ_ALLUXIO_THROUGHPUT.getName());
-    registerThroughputGauge(MetricKey.CLUSTER_BYTES_READ_DOMAIN.getName(),
+    registerTimeSeries(MetricKey.CLUSTER_BYTES_READ_DOMAIN.getName(),
         MetricKey.CLUSTER_BYTES_READ_DOMAIN_THROUGHPUT.getName());
-    registerThroughputGauge(MetricKey.CLUSTER_BYTES_WRITTEN_ALLUXIO.getName(),
+    registerTimeSeries(MetricKey.CLUSTER_BYTES_WRITTEN_ALLUXIO.getName(),
         MetricKey.CLUSTER_BYTES_WRITTEN_ALLUXIO_THROUGHPUT.getName());
-    registerThroughputGauge(MetricKey.CLUSTER_BYTES_WRITTEN_DOMAIN.getName(),
+    registerTimeSeries(MetricKey.CLUSTER_BYTES_WRITTEN_DOMAIN.getName(),
         MetricKey.CLUSTER_BYTES_WRITTEN_DOMAIN_THROUGHPUT.getName());
-    registerThroughputGauge(MetricKey.CLUSTER_BYTES_READ_UFS_ALL.getName(),
+    registerTimeSeries(MetricKey.CLUSTER_BYTES_READ_UFS_ALL.getName(),
         MetricKey.CLUSTER_BYTES_READ_UFS_THROUGHPUT.getName());
-    registerThroughputGauge(MetricKey.CLUSTER_BYTES_WRITTEN_UFS_ALL.getName(),
+    registerTimeSeries(MetricKey.CLUSTER_BYTES_WRITTEN_UFS_ALL.getName(),
         MetricKey.CLUSTER_BYTES_WRITTEN_UFS_THROUGHPUT.getName());
+
     // client metrics
-    registerThroughputGauge(MetricKey.CLUSTER_BYTES_READ_LOCAL.getName(),
+    registerTimeSeries(MetricKey.CLUSTER_BYTES_READ_LOCAL.getName(),
         MetricKey.CLUSTER_BYTES_READ_LOCAL_THROUGHPUT.getName());
-    registerThroughputGauge(MetricKey.CLUSTER_BYTES_WRITTEN_LOCAL.getName(),
+    registerTimeSeries(MetricKey.CLUSTER_BYTES_WRITTEN_LOCAL.getName(),
         MetricKey.CLUSTER_BYTES_WRITTEN_LOCAL_THROUGHPUT.getName());
 
     // TODO(lu) Create a template for dynamically construct MetricKey
@@ -128,6 +149,20 @@ public class DefaultMetricsMaster extends CoreMaster implements MetricsMaster, N
       addAggregator(new SingleTagValueAggregator(MetricInfo.UFS_OP_PREFIX + ufsOp,
           MetricsSystem.getMasterMetricName(ufsOp.toString()), MetricInfo.TAG_UFS));
     }
+  }
+
+  /**
+   * Registers the corresponding time series of the given counter.
+   *
+   * @param counterName the counter series for the throughput time series
+   * @param timeSeriesName the time series throughput name to be registered
+   */
+  @VisibleForTesting
+  protected void registerTimeSeries(String counterName, String timeSeriesName) {
+    mSlidingWindowRegisry.put(counterName, timeSeriesName);
+    MetricsSystem.registerMetricIfAbsent(timeSeriesName,
+        new Histogram(new SlidingWindowReservoir(ServerConfiguration.getInt(
+            PropertyKey.MASTER_CLUSTER_METRICS_SLIDING_WINDOW))));
   }
 
   /**
@@ -210,6 +245,7 @@ public class DefaultMetricsMaster extends CoreMaster implements MetricsMaster, N
   private class ClusterMetricsUpdater implements HeartbeatExecutor {
     @Override
     public void heartbeat() throws InterruptedException {
+      updateSlidingWindowMasterMetrics();
       updateMultiValueMasterMetrics();
     }
 

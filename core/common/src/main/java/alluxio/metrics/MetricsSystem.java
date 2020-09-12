@@ -24,6 +24,7 @@ import alluxio.util.network.NetworkAddressUtils;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -529,16 +530,36 @@ public final class MetricsSystem {
   }
 
   /**
-   * Registers a gauge if it has not been registered.
+   * Get or add histogram with the given name.
+   * The histogram stores in the metrics system is never removed but may reset to zero.
    *
-   * @param name the gauge name
-   * @param metric the gauge
-   * @param <T> the type
+   * @param name the name of the metric
+   * @return a histogram object with the qualified metric name
    */
-  public static synchronized <T> void registerGaugeIfAbsent(String name, Gauge<T> metric) {
+  public static Histogram histogram(String name) {
+    return METRIC_REGISTRY.histogram(getMetricName(name));
+  }
+
+  /**
+   * Registers a metric if it has not been registered.
+   *
+   * @param name the metric name
+   * @param metric the metric
+   */
+  public static synchronized <T extends com.codahale.metrics.Metric> void registerMetricIfAbsent(String name, T metric) {
     if (!METRIC_REGISTRY.getMetrics().containsKey(name)) {
       METRIC_REGISTRY.register(name, metric);
     }
+  }
+
+  /**
+   * Registers a gauge if it has not been registered.
+   *
+   * @param name the gauge name
+   * @param gauge the gauge
+   */
+  public static synchronized <T> void registerGaugeIfAbsent(String name, Gauge<T> gauge) {
+    registerMetricIfAbsent(name, gauge);
   }
 
   /**

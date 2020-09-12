@@ -1451,6 +1451,14 @@ public final class PropertyKey implements Comparable<PropertyKey> {
           .setScope(Scope.MASTER)
           .setIsHidden(true)
           .build();
+  public static final PropertyKey MASTER_CLUSTER_METRICS_SLIDING_WINDOW =
+      new Builder(Name.MASTER_CLUSTER_METRICS_SLIDING_WINDOW)
+          .setDefaultValue("10")
+          .setDescription("The interval for periodically updating the cluster level metrics.")
+          .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+          .setScope(Scope.MASTER)
+          .setIsHidden(true)
+          .build();
   public static final PropertyKey MASTER_EMBEDDED_JOURNAL_PROXY_HOST =
       new Builder(Name.MASTER_EMBEDDED_JOURNAL_PROXY_HOST)
           .setDescription(String.format(
@@ -4849,6 +4857,8 @@ public final class PropertyKey implements Comparable<PropertyKey> {
     public static final String MASTER_DAILY_BACKUP_STATE_LOCK_TIMEOUT =
         "alluxio.master.daily.backup.state.lock.timeout";
     public static final String MASTER_BIND_HOST = "alluxio.master.bind.host";
+    public static final String MASTER_CLUSTER_METRICS_SLIDING_WINDOW =
+        "alluxio.master.cluster.metrics.sliding.window";
     public static final String MASTER_CLUSTER_METRICS_UPDATE_INTERVAL =
         "alluxio.master.cluster.metrics.update.interval";
     public static final String MASTER_FILE_ACCESS_TIME_JOURNAL_FLUSH_INTERVAL =

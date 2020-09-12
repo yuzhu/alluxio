@@ -439,7 +439,7 @@ public final class MetricKey implements Comparable<MetricKey> {
   public static final MetricKey CLUSTER_BYTES_READ_ALLUXIO_THROUGHPUT =
       new Builder(Name.CLUSTER_BYTES_READ_ALLUXIO_THROUGHPUT)
           .setDescription("Bytes read throughput from Alluxio storage by all workers")
-          .setMetricType(MetricType.GAUGE)
+          .setMetricType(MetricType.HISTOGRAM)
           .build();
   public static final MetricKey CLUSTER_BYTES_READ_DOMAIN =
       new Builder(Name.CLUSTER_BYTES_READ_DOMAIN)
@@ -451,7 +451,7 @@ public final class MetricKey implements Comparable<MetricKey> {
       new Builder(Name.CLUSTER_BYTES_READ_DOMAIN_THROUGHPUT)
           .setDescription("Bytes read throughput from Alluxio storage "
               + "via domain socket by all workers")
-          .setMetricType(MetricType.GAUGE)
+          .setMetricType(MetricType.HISTOGRAM)
           .build();
   public static final MetricKey CLUSTER_BYTES_READ_LOCAL =
       new Builder(Name.CLUSTER_BYTES_READ_LOCAL)
@@ -462,7 +462,7 @@ public final class MetricKey implements Comparable<MetricKey> {
   public static final MetricKey CLUSTER_BYTES_READ_LOCAL_THROUGHPUT =
       new Builder(Name.CLUSTER_BYTES_READ_LOCAL_THROUGHPUT)
           .setDescription("Bytes throughput short-circuit read from local storage by all clients")
-          .setMetricType(MetricType.GAUGE)
+          .setMetricType(MetricType.HISTOGRAM)
           .build();
   public static final MetricKey CLUSTER_BYTES_READ_UFS =
       new Builder(Name.CLUSTER_BYTES_READ_UFS)
@@ -471,13 +471,13 @@ public final class MetricKey implements Comparable<MetricKey> {
           .build();
   public static final MetricKey CLUSTER_BYTES_READ_UFS_ALL =
       new Builder(Name.CLUSTER_BYTES_READ_UFS_ALL)
-          .setDescription("Total number of bytes read from a all Alluxio UFSes by all workers")
+          .setDescription("Total number of bytes read from all Alluxio UFSes by all workers")
           .setMetricType(MetricType.COUNTER)
           .build();
   public static final MetricKey CLUSTER_BYTES_READ_UFS_THROUGHPUT =
       new Builder(Name.CLUSTER_BYTES_READ_UFS_THROUGHPUT)
           .setDescription("Bytes read throughput from all Alluxio UFSes by all workers")
-          .setMetricType(MetricType.GAUGE)
+          .setMetricType(MetricType.HISTOGRAM)
           .build();
   public static final MetricKey CLUSTER_BYTES_WRITTEN_ALLUXIO =
       new Builder(Name.CLUSTER_BYTES_WRITTEN_ALLUXIO)
@@ -488,7 +488,7 @@ public final class MetricKey implements Comparable<MetricKey> {
   public static final MetricKey CLUSTER_BYTES_WRITTEN_ALLUXIO_THROUGHPUT =
       new Builder(Name.CLUSTER_BYTES_WRITTEN_ALLUXIO_THROUGHPUT)
           .setDescription("Bytes write throughput to Alluxio storage in all workers")
-          .setMetricType(MetricType.GAUGE)
+          .setMetricType(MetricType.HISTOGRAM)
           .build();
   public static final MetricKey CLUSTER_BYTES_WRITTEN_DOMAIN =
       new Builder(Name.CLUSTER_BYTES_WRITTEN_DOMAIN)
@@ -500,7 +500,7 @@ public final class MetricKey implements Comparable<MetricKey> {
       new Builder(Name.CLUSTER_BYTES_WRITTEN_DOMAIN_THROUGHPUT)
           .setDescription("Throughput of bytes written to Alluxio storage "
               + "via domain socket by all workers")
-          .setMetricType(MetricType.GAUGE)
+          .setMetricType(MetricType.HISTOGRAM)
           .build();
   public static final MetricKey CLUSTER_BYTES_WRITTEN_LOCAL =
       new Builder(Name.CLUSTER_BYTES_WRITTEN_LOCAL)
@@ -511,7 +511,7 @@ public final class MetricKey implements Comparable<MetricKey> {
   public static final MetricKey CLUSTER_BYTES_WRITTEN_LOCAL_THROUGHPUT =
       new Builder(Name.CLUSTER_BYTES_WRITTEN_LOCAL_THROUGHPUT)
           .setDescription("Bytes throughput written to local storage by all clients")
-          .setMetricType(MetricType.GAUGE)
+          .setMetricType(MetricType.HISTOGRAM)
           .build();
   public static final MetricKey CLUSTER_BYTES_WRITTEN_UFS =
       new Builder(Name.CLUSTER_BYTES_WRITTEN_UFS)
@@ -526,7 +526,7 @@ public final class MetricKey implements Comparable<MetricKey> {
   public static final MetricKey CLUSTER_BYTES_WRITTEN_UFS_THROUGHPUT =
       new Builder(Name.CLUSTER_BYTES_WRITTEN_UFS_THROUGHPUT)
           .setDescription("Bytes write throughput to all Alluxio UFSes by all workers")
-          .setMetricType(MetricType.GAUGE)
+          .setMetricType(MetricType.HISTOGRAM)
           .build();
   public static final MetricKey CLUSTER_CAPACITY_TOTAL =
       new Builder(Name.CLUSTER_CAPACITY_TOTAL)

@@ -28,6 +28,7 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -68,7 +69,7 @@ public final class MetricsMasterClientServiceHandler
 
           for (alluxio.grpc.ClientMetrics clientMetric :
               request.getOptions().getClientMetricsList()) {
-            List<Metric> metrics = Lists.newArrayList();
+            List<Metric> metrics = new ArrayList<>();
             for (alluxio.grpc.Metric metric : clientMetric.getMetricsList()) {
               metrics.add(Metric.fromProto(metric));
             }

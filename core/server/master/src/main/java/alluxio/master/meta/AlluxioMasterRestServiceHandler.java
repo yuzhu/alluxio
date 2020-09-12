@@ -77,6 +77,7 @@ import alluxio.wire.WorkerNetAddress;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
@@ -834,6 +835,7 @@ public final class AlluxioMasterRestServiceHandler {
       MetricRegistry mr = MetricsSystem.METRIC_REGISTRY;
       SortedMap<String, Gauge> gauges = mr.getGauges();
       SortedMap<String, Counter> counters = mr.getCounters();
+      SortedMap<String, Histogram> histograms = mr.getHistograms();
 
       Long masterCapacityTotal = (Long) gauges
           .get(MetricKey.CLUSTER_CAPACITY_TOTAL.getName()).getValue();

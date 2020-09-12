@@ -20,6 +20,7 @@ import alluxio.metrics.MetricsSystem.InstanceType;
 import alluxio.resource.LockResource;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
 import com.google.common.base.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,9 @@ public class MetricsStore {
   @GuardedBy("mLock")
   private final ConcurrentHashMap<ClusterCounterKey, Counter> mClusterCounters;
 
+  @GuardedBy("mLock")
+  private final ConcurrentHashMap<String, Histogram> mHistograms;
+
   /**
    * Constructs a new {@link MetricsStore}.
    *
@@ -76,6 +80,7 @@ public class MetricsStore {
     mLastClearTime = clock.millis();
     mLock = new ReentrantReadWriteLock();
     mClusterCounters = new ConcurrentHashMap<>();
+    mHistograms = new ConcurrentHashMap<>();
   }
 
   /**
@@ -137,6 +142,7 @@ public class MetricsStore {
         if (instanceType.equals(InstanceType.CLIENT)) {
           continue;
         }
+        // IF THERE IS  MAPPING TO THROUGHPUT if（mThroughputMap.contains(metric.getName())
         // Need to increment two metrics: one for the specific ufs the current metric recorded from
         // and one to summarize values from all UFSes
         if (metric.getName().equals(BYTES_READ_UFS)) {

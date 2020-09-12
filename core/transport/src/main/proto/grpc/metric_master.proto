@@ -28,10 +28,12 @@ message MetricsHeartbeatPRequest {
 message MetricsHeartbeatPResponse {}
 
 // This type is used as a union, only one of doubleValue or stringValue should be set
+// or if it is a timeSeries, a series of longs
 message MetricValue {
   optional double doubleValue = 1;
   optional string stringValue = 2;
   optional grpc.MetricType metricType = 6;
+  repeated int64 timeSeries = 7;
 }
 
 message GetMetricsPOptions {}

@@ -67,6 +67,8 @@ enum MetricType {
   METER = 2;
   // TIMER represents a histogram of the rate of the specified events.
   TIMER = 3;
+  // HISTOGRAM is a collection of long values and can run statistical functions on them.
+  HISTOGRAM = 4;
 }
 
 enum CommandType {
