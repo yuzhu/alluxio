@@ -302,19 +302,13 @@ public class InodeSyncStream {
     int syncPathCount = 0;
     int failedSyncPathCount = 0;
     int stopNum = -1; // stop syncing when we've processed this many paths. -1 for infinite
-<<<<<<< HEAD
     long start = Long.MAX_VALUE;
     if (LOG.isDebugEnabled()) {
       start = System.currentTimeMillis();
     }
-||||||| parent of 55a3b28b75 (Fix regression in AbsentUfsPathCache)
-    Instant start = Instant.now();
-=======
     if (!mRootScheme.shouldSync() && !mForceSync) {
       return SyncStatus.NOT_NEEDED;
     }
-    Instant start = Instant.now();
->>>>>>> 55a3b28b75 (Fix regression in AbsentUfsPathCache)
     try (LockedInodePath path = mInodeTree.lockInodePath(mRootScheme)) {
       if (mAuditContext != null && mAuditContextSrcInodeFunc != null) {
         mAuditContext.setSrcInode(mAuditContextSrcInodeFunc.apply(path));
