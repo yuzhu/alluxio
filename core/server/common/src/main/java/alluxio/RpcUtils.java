@@ -109,7 +109,7 @@ public final class RpcUtils {
     // avoid string format for better performance if debug is off
     String debugDesc = logger.isDebugEnabled() ? String.format(description, args) : null;
     try (Timer.Context ctx = MetricsSystem.timer(getQualifiedMetricName(methodName)).time()) {
-      // MetricsSystem.counter(getQualifiedInProgressMetricName(methodName)).inc();
+      MetricsSystem.counter(getQualifiedInProgressMetricName(methodName)).inc();
       logger.debug("Enter: {}: {}", methodName, debugDesc);
       T res = callable.call();
       logger.debug("Exit: {}: {}", methodName, debugDesc);
@@ -139,7 +139,7 @@ public final class RpcUtils {
       MetricsSystem.counter(getQualifiedFailureMetricName(methodName)).inc();
       throw new InternalException(e).toGrpcStatusException();
     } finally {
-      // MetricsSystem.counter(getQualifiedInProgressMetricName(methodName)).dec();
+      MetricsSystem.counter(getQualifiedInProgressMetricName(methodName)).dec();
     }
   }
 
@@ -162,7 +162,7 @@ public final class RpcUtils {
     // avoid string format for better performance if debug is off
     String debugDesc = logger.isDebugEnabled() ? String.format(description, args) : null;
     try (Timer.Context ctx = MetricsSystem.timer(getQualifiedMetricName(methodName)).time()) {
-      // MetricsSystem.counter(getQualifiedInProgressMetricName(methodName)).inc();
+      MetricsSystem.counter(getQualifiedInProgressMetricName(methodName)).inc();
       logger.debug("Enter(stream): {}: {}", methodName, debugDesc);
       T result = callable.call();
       logger.debug("Exit(stream) (OK): {}: {}", methodName, debugDesc);
@@ -181,7 +181,7 @@ public final class RpcUtils {
       MetricsSystem.counter(getQualifiedFailureMetricName(methodName)).inc();
       callable.exceptionCaught(e);
     } finally {
-      // MetricsSystem.counter(getQualifiedInProgressMetricName(methodName)).dec();
+      MetricsSystem.counter(getQualifiedInProgressMetricName(methodName)).dec();
     }
   }
 
